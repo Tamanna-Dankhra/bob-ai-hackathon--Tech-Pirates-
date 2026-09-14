@@ -51,7 +51,7 @@ The project can be tested by starting both the frontend and backend and verifyin
 1. Start the frontend and backend using the commands above.
 2. Open the frontend in your browser.
 3. Use the Safety Intelligence and Regulatory Intelligence features to explore the application.
-localhost : 
+localhost : http://localhost:5173/
 
 ## Troubleshooting
 
