@@ -31,6 +31,13 @@ class CopilotContext(BaseModel):
         default=None,
         description="The full JSON response from POST /api/regulatory/check.",
     )
+    selected_signal: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "The individual signal the user clicked 'Ask AI' on in SafetyModule. "
+            "Contains drug, adverse_event, prr, report_count, priority, explanation."
+        ),
+    )
 
 
 class CopilotRequest(BaseModel):
@@ -57,5 +64,6 @@ def copilot_chat(body: CopilotRequest) -> dict[str, Any]:
         user_message=body.message,
         safety_results=body.context.safety_results,
         regulatory_results=body.context.regulatory_results,
+        selected_signal=body.context.selected_signal,
     )
     return response

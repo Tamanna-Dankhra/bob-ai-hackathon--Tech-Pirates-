@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react'
-import { UploadCloud, CheckCircle2, AlertCircle, BarChart2, Search } from 'lucide-react'
+import React, { useState, useCallback } from 'react'
+import { UploadCloud, AlertCircle, BarChart2, Search, FlaskConical } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
-import { analyzeSafety } from '../api/client.js'
+import { analyzeSafety, loadDemoData } from '../api/client.js'
 
 function PriorityBadge({ priority }) {
   const cls = priority === 'HIGH' ? 'badge-high' : priority === 'MEDIUM' ? 'badge-medium' : 'badge-low'
@@ -16,6 +16,7 @@ export default function SafetyModule({ safetyResults, onResults, onSelectSignal,
   const [file, setFile] = useState(null)
   const [dragging, setDragging] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
   const [error, setError] = useState(null)
   const [expandedRow, setExpandedRow] = useState(null)
 
@@ -31,7 +32,7 @@ export default function SafetyModule({ safetyResults, onResults, onSelectSignal,
     if (e.target.files[0]) { setFile(e.target.files[0]); setError(null) }
   }
 
-  // ── Analyze ──
+  // ── Analyze uploaded CSV ──
   const handleAnalyze = async () => {
     if (!file) return
     setLoading(true); setError(null)
@@ -45,12 +46,28 @@ export default function SafetyModule({ safetyResults, onResults, onSelectSignal,
     }
   }
 
+  // ── Load demo dataset from backend ──
+  const handleLoadDemo = async () => {
+    setDemoLoading(true); setError(null)
+    try {
+      const result = await loadDemoData()
+      onResults(result)
+      setFile(null) // clear any previously selected file
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setDemoLoading(false)
+    }
+  }
+
   const signals = safetyResults?.signals ?? []
   const chartData = signals.slice(0, 10).map(s => ({
     name: `${s.drug.replace('Drug', '')} / ${s.adverse_event.length > 14 ? s.adverse_event.slice(0, 14) + '…' : s.adverse_event}`,
     prr: s.prr,
     priority: s.priority,
   }))
+
+  const anyLoading = loading || demoLoading
 
   return (
     <div>
@@ -61,6 +78,19 @@ export default function SafetyModule({ safetyResults, onResults, onSelectSignal,
             <div className="card-title">Adverse Event Data Upload</div>
             <div className="card-subtitle">CSV format: drug_name, adverse_event, report_count</div>
           </div>
+          {/* Demo button — top-right of card header */}
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={handleLoadDemo}
+            disabled={anyLoading}
+            title="Load the built-in synthetic demo dataset and run analysis"
+          >
+            {demoLoading ? (
+              <><span className="spinner spinner-dark" /> Loading demo…</>
+            ) : (
+              <><FlaskConical size={14} /> Load Demo Data</>
+            )}
+          </button>
         </div>
         <div className="card-body">
           {/* Drop zone */}
@@ -106,7 +136,7 @@ export default function SafetyModule({ safetyResults, onResults, onSelectSignal,
             <button
               className="btn btn-primary"
               onClick={handleAnalyze}
-              disabled={!file || loading}
+              disabled={!file || anyLoading}
             >
               {loading ? (
                 <><span className="spinner" /> Analyzing…</>
@@ -121,6 +151,14 @@ export default function SafetyModule({ safetyResults, onResults, onSelectSignal,
       {/* ── Results ── */}
       {safetyResults && (
         <>
+          {/* Demo data notice */}
+          {safetyResults.demo && (
+            <div className="alert alert-info" style={{ marginBottom: 16, fontSize: 12.5 }}>
+              <FlaskConical size={15} />
+              <span><strong>Demo dataset:</strong> {safetyResults.demo_note}</span>
+            </div>
+          )}
+
           {/* Summary stats */}
           <div className="stat-row" style={{ marginBottom: 24 }}>
             {[
@@ -194,8 +232,8 @@ export default function SafetyModule({ safetyResults, onResults, onSelectSignal,
                   </thead>
                   <tbody>
                     {signals.map((s, i) => (
-                      <>
-                        <tr key={i} className={`row-${s.priority.toLowerCase()}`}>
+                      <React.Fragment key={i}>
+                        <tr className={`row-${s.priority.toLowerCase()}`}>
                           <td style={{ fontWeight: 700 }}>{s.drug}</td>
                           <td>{s.adverse_event}</td>
                           <td style={{ fontFamily: 'monospace', fontWeight: 700, color: PRIORITY_COLOR[s.priority] }}>{s.prr}</td>
@@ -221,7 +259,7 @@ export default function SafetyModule({ safetyResults, onResults, onSelectSignal,
                           </td>
                         </tr>
                         {expandedRow === i && (
-                          <tr key={`exp-${i}`}>
+                          <tr>
                             <td colSpan={6} style={{ background: '#fafbfc', padding: '10px 18px' }}>
                               <div className="explanation-text">
                                 <strong>Explanation:</strong> {s.explanation}
@@ -229,7 +267,7 @@ export default function SafetyModule({ safetyResults, onResults, onSelectSignal,
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -245,7 +283,7 @@ export default function SafetyModule({ safetyResults, onResults, onSelectSignal,
         </>
       )}
 
-      {!safetyResults && !loading && (
+      {!safetyResults && !anyLoading && (
         <div className="card">
           <div className="empty-state">
             <div className="empty-state-icon">📊</div>

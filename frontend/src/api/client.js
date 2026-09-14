@@ -24,6 +24,16 @@ async function handleResponse(res) {
 // ─── Safety ───────────────────────────────────────────────────────────────────
 
 /**
+ * Run safety analysis on the bundled synthetic demo dataset (no file upload needed).
+ * Calls GET /api/safety/demo — the backend loads sample_adverse_events.csv itself.
+ * @returns {Promise<object>} Same shape as analyzeSafety() response
+ */
+export async function loadDemoData() {
+  const res = await fetch(`${BASE_URL}/safety/demo`)
+  return handleResponse(res)
+}
+
+/**
  * Upload a CSV file and analyze adverse-event safety signals.
  * @param {File} file
  * @returns {Promise<object>} Backend response with summary + signals array
@@ -60,7 +70,7 @@ export async function checkRegulatory(data) {
 /**
  * Send a chat message to the AI Copilot with analysis context.
  * @param {string} message
- * @param {{ safety_results: object|null, regulatory_results: object|null }} context
+ * @param {{ safety_results: object|null, regulatory_results: object|null, selected_signal: object|null }} context
  * @returns {Promise<object>} Copilot response
  */
 export async function sendCopilotMessage(message, context = {}) {
@@ -72,6 +82,7 @@ export async function sendCopilotMessage(message, context = {}) {
       context: {
         safety_results: context.safety_results ?? null,
         regulatory_results: context.regulatory_results ?? null,
+        selected_signal: context.selected_signal ?? null,
       },
     }),
   })

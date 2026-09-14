@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers import safety, regulatory, copilot
 from services.watsonx_client import get_watsonx_config_status
+from services.openrouter_client import get_config_status as get_openrouter_config_status
 
 app = FastAPI(
     title="PharmaGuard AI",
@@ -48,10 +49,23 @@ app.include_router(copilot.router, prefix="/api/copilot", tags=["AI Copilot"])
 # ---------------------------------------------------------------------------
 @app.get("/api/health", tags=["Health"])
 def health_check():
-    """Confirms the PharmaGuard AI backend is running and returns watsonx config status."""
+    """Confirms the PharmaGuard AI backend is running and reports AI provider config (no secrets)."""
+    openrouter_status = get_openrouter_config_status()
+    watsonx_status    = get_watsonx_config_status()
+
+    # Derive active provider without exposing keys
+    if openrouter_status["configured"]:
+        active_provider = "openrouter"
+    elif watsonx_status["configured"]:
+        active_provider = "watsonx"
+    else:
+        active_provider = "placeholder"
+
     return {
         "status": "ok",
         "service": "PharmaGuard AI",
         "message": "PharmaGuard AI backend is running.",
-        "watsonx": get_watsonx_config_status(),
+        "active_provider": active_provider,
+        "openrouter": openrouter_status,
+        "watsonx": watsonx_status,
     }

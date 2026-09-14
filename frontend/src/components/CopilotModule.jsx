@@ -1,6 +1,56 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, AlertTriangle, Bot } from 'lucide-react'
+import { Send, AlertTriangle, Bot, CheckCircle2, Wifi } from 'lucide-react'
 import { sendCopilotMessage } from '../api/client.js'
+
+// ── Provider status banner ─────────────────────────────────────────────────
+// Fetches /api/health once on mount to know which AI provider is active.
+// Shows a clean status pill; hides entirely when provider is live.
+function ProviderBanner() {
+  const [provider, setProvider] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/health')
+      .then(r => r.json())
+      .then(d => setProvider(d.active_provider ?? 'placeholder'))
+      .catch(() => setProvider('placeholder'))
+  }, [])
+
+  if (provider === null) return null   // loading — show nothing
+
+  if (provider === 'openrouter' || provider === 'watsonx') {
+    return (
+      <div style={{
+        margin: '0 16px 4px',
+        padding: '7px 14px',
+        background: '#f0fdf4',
+        border: '1px solid #bbf7d0',
+        borderRadius: 7,
+        fontSize: 12.5,
+        color: '#15803d',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 7,
+      }}>
+        <Wifi size={13} />
+        <span>
+          <strong>Live AI active</strong> — provider: <code style={{ background: '#dcfce7', padding: '1px 5px', borderRadius: 3 }}>{provider}</code>
+          . All answers are grounded in your PharmaGuard analysis data.
+        </span>
+      </div>
+    )
+  }
+
+  // placeholder / not configured
+  return (
+    <div className="placeholder-banner" style={{ margin: '0 16px 4px' }}>
+      <AlertTriangle size={14} />
+      <span>
+        <strong>Demo mode</strong> — no AI provider configured.
+        Add <code>OPENROUTER_API_KEY</code> to <code>backend/.env</code> for live AI responses.
+      </span>
+    </div>
+  )
+}
 
 const SUGGESTIONS = [
   'Which safety signal should I investigate first?',
@@ -20,7 +70,7 @@ function ChatMessage({ role, content, isPlaceholder }) {
       <div>
         {isPlaceholder && !isUser && (
           <div style={{ fontSize: 11, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 5, padding: '2px 8px', marginBottom: 5, display: 'inline-block' }}>
-            Demo mode — IBM watsonx.ai not yet connected
+            Demo mode — no AI provider configured
           </div>
         )}
         <div className="chat-bubble">
@@ -67,11 +117,15 @@ export default function CopilotModule({ safetyResults, regulatoryResults, select
       const result = await sendCopilotMessage(msg, {
         safety_results: safetyResults,
         regulatory_results: regulatoryResults,
+        selected_signal: selectedSignal ?? null,
       })
+      // isPlaceholder is true only when no live AI provider answered
+      const isPlaceholder = result.provider === 'placeholder'
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: result.answer,
-        isPlaceholder: !result.watsonx_ready,
+        isPlaceholder,
+        provider: result.provider,
       }])
     } catch (err) {
       setMessages(prev => [...prev, {
@@ -152,11 +206,8 @@ export default function CopilotModule({ safetyResults, regulatoryResults, select
           )}
         </div>
 
-        {/* Watsonx placeholder notice */}
-        <div className="placeholder-banner" style={{ margin: '0 16px' }}>
-          <AlertTriangle size={14} />
-          <span><strong>Demo Mode:</strong> IBM watsonx.ai is not yet connected. The AI Copilot is fully wired up and context-aware — responses show the system prompt with your actual analysis data. Connect watsonx.ai to get real AI answers.</span>
-        </div>
+        {/* Provider status banner — live/demo indicator */}
+        <ProviderBanner />
 
         {/* Messages */}
         <div className="chat-window">

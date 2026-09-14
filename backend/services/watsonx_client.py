@@ -187,71 +187,111 @@ def _call_watsonx_placeholder(prompt: str) -> str:
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Public entry point — called by the copilot router
+# Provider chain: OpenRouter (if configured) → watsonx (if configured) → placeholder
 # ──────────────────────────────────────────────────────────────────────────────
 
 def get_ai_response(
     user_message: str,
     safety_results: dict[str, Any] | None = None,
     regulatory_results: dict[str, Any] | None = None,
+    selected_signal: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Generate an AI response grounded in the provided analysis context.
 
+    Provider priority:
+        1. OpenRouter  — when OPENROUTER_API_KEY is set
+        2. watsonx.ai  — when WATSONX_API_KEY + WATSONX_PROJECT_ID are set
+        3. Placeholder — demo mode when neither provider is configured
+
     Returns a dict with:
         answer                  — the model's response text
         model                   — model ID used (or "placeholder")
-        watsonx_ready           — True when a real watsonx call was made
+        provider                — "openrouter" | "watsonx" | "placeholder"
+        watsonx_ready           — True when a real watsonx call was made (legacy field)
+        openrouter_ready        — True when an OpenRouter call was made
         context_used            — which analysis contexts were included
-        error                   — error message if watsonx call failed (optional)
+        error                   — error message if the live call failed (optional)
     """
+    context_used = {
+        "safety_results_provided": safety_results is not None,
+        "regulatory_results_provided": regulatory_results is not None,
+    }
+
+    # ── 1. Try OpenRouter first ───────────────────────────────────────────────
+    try:
+        from services.openrouter_client import (
+            call_openrouter,
+            is_configured as openrouter_configured,
+            OPENROUTER_MODEL,
+        )
+    except ImportError:
+        openrouter_configured = lambda: False  # noqa: E731
+
+    if openrouter_configured():
+        try:
+            answer = call_openrouter(user_message, safety_results, regulatory_results, selected_signal)
+            return {
+                "answer": answer,
+                "model": OPENROUTER_MODEL,
+                "provider": "openrouter",
+                "watsonx_ready": False,
+                "openrouter_ready": True,
+                "context_used": context_used,
+            }
+        except Exception as exc:
+            or_error = f"OpenRouter request failed: {type(exc).__name__}: {exc}"
+            # Surface the error but continue to next provider
+        else:
+            or_error = None
+    else:
+        or_error = None
+
+    # ── 2. Try watsonx.ai ─────────────────────────────────────────────────────
     prompt = _build_prompt(user_message, safety_results, regulatory_results)
+    wx_error: str | None = None
 
-    configured = _is_configured()
-    error_detail: str | None = None
-
-    if configured:
+    if _is_configured():
         try:
             answer = _call_watsonx_real(prompt)
             return {
                 "answer": answer,
                 "model": WATSONX_MODEL_ID,
+                "provider": "watsonx",
                 "watsonx_ready": True,
-                "context_used": {
-                    "safety_results_provided": safety_results is not None,
-                    "regulatory_results_provided": regulatory_results is not None,
-                },
+                "openrouter_ready": False,
+                "context_used": context_used,
             }
         except RuntimeError as exc:
-            # Credentials present but call failed — surface the error clearly
-            error_detail = str(exc)
+            wx_error = str(exc)
         except Exception as exc:
-            # Unexpected SDK / network error
-            error_detail = f"watsonx.ai request failed: {type(exc).__name__}: {exc}"
+            wx_error = f"watsonx.ai request failed: {type(exc).__name__}: {exc}"
 
-    # Fall back to placeholder (either not configured, or call failed)
+    # ── 3. Placeholder fallback ───────────────────────────────────────────────
     answer = _call_watsonx_placeholder(prompt)
+
+    errors: list[str] = [e for e in (or_error, wx_error) if e]
+    note = (
+        "Set OPENROUTER_API_KEY (preferred) or WATSONX_API_KEY + WATSONX_PROJECT_ID "
+        "to activate live AI responses."
+    )
 
     result: dict[str, Any] = {
         "answer": answer,
         "model": "placeholder",
+        "provider": "placeholder",
         "watsonx_ready": False,
-        "context_used": {
-            "safety_results_provided": safety_results is not None,
-            "regulatory_results_provided": regulatory_results is not None,
-        },
-        "note": (
-            "Set WATSONX_API_KEY, WATSONX_URL, WATSONX_PROJECT_ID, and WATSONX_MODEL_ID "
-            "environment variables to activate IBM watsonx.ai."
-        ),
+        "openrouter_ready": False,
+        "context_used": context_used,
+        "note": note,
     }
 
-    if error_detail:
-        # Credentials were present but the call failed — surface the detail
-        result["error"] = error_detail
+    if errors:
+        result["error"] = " | ".join(errors)
         result["answer"] = (
-            f"[watsonx.ai error - falling back to placeholder]\n\n"
-            f"{error_detail}\n\n"
-            f"Please check your credentials and project ID."
+            "[AI provider error — falling back to demo mode]\n\n"
+            + "\n".join(errors)
+            + "\n\nPlease check your credentials and try again."
         )
 
     return result
