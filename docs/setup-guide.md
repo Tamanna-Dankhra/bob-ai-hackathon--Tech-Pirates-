@@ -1,153 +1,66 @@
-# Setup Guide — PharmaGuard AI
+# Setup Guide
+
+> This guide explains how to install, configure, run, and test PharmaGuard AI.
 
 ## Prerequisites
 
-| Requirement | Version |
-|---|---|
-| Python | 3.10 or later |
-| Node.js | 18 or later |
-| npm | 9 or later |
-| git | any recent version |
+Before you begin, ensure you have the following installed:
 
----
+- Git
+- Node.js
+- Python 3.x
+  
+ ## Environment Variables
 
-## 1. Clone the Repository
+PharmaGuard AI uses IBM watsonx.ai for AI functionality.
 
-```bash
-git clone https://github.com/<your-org>/bob-ai-hackathon--Tech-Pirates-.git
-cd bob-ai-hackathon--Tech-Pirates-
-```
-
----
-
-## 2. Backend Setup
-
-### 2a. Create and activate a virtual environment
-
-```bash
-cd src/backend
-python -m venv .venv
-
-# Windows
-.venv\Scripts\activate
-
-# macOS / Linux
-source .venv/bin/activate
-```
-
-### 2b. Install Python dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 2c. Configure environment variables
-
-```bash
-# Copy the example file
-cp .env.example .env
-```
-
-Open `src/backend/.env` and fill in at least one AI provider:
-
-```dotenv
-# Option A — OpenRouter (recommended, free tier available)
-OPENROUTER_API_KEY=sk-or-...
-OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct:free
-
-# Option B — IBM watsonx.ai
-WATSONX_API_KEY=...
-WATSONX_PROJECT_ID=...
-WATSONX_URL=https://us-south.ml.cloud.ibm.com
-WATSONX_MODEL_ID=ibm/granite-13b-chat-v2
-```
-
-> **Note:** The app runs in demo/placeholder mode if no credentials are provided. All features work; AI responses will be clearly labelled as placeholder output.
-
-### 2d. Start the backend
-
-```bash
-# From src/backend/ (with virtualenv active)
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Verify: open [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health) — you should see `"status": "ok"`.
-
----
-
-## 3. Frontend Setup
-
-### 3a. Install Node dependencies
+Create a `.env` file in the project root and add the required IBM watsonx.ai credentials provided by the developers.
+## Installation
+### Frontend
 
 ```bash
 cd src/frontend
 npm install
-```
 
-### 3b. Start the development server
+### Backend
 
-```bash
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-The Vite dev server proxies all `/api` requests to `http://127.0.0.1:8000`, so the backend must be running simultaneously.
-
----
-
-## 4. Running Both Services Together
-
-Open two terminal windows:
-
-**Terminal 1 — Backend**
 ```bash
 cd src/backend
-.venv\Scripts\activate   # (Windows) or source .venv/bin/activate
-uvicorn main:app --reload
-```
+pip install -r requirements.txt
 
-**Terminal 2 — Frontend**
+## Running the Application
+
+### Frontend
+
 ```bash
 cd src/frontend
 npm run dev
-```
 
-Browse to [http://localhost:5173](http://localhost:5173).
-
----
-
-## 5. Production Build (Frontend)
+### Backend
 
 ```bash
-cd src/frontend
-npm run build
-```
+cd src/backend
+python -m uvicorn main:app --reload
 
-The compiled static assets are output to `src/frontend/dist/`. Serve them with any static file server or configure FastAPI to serve the `dist/` folder directly.
+## Running Tests
 
----
+The project can be tested by starting both the frontend and backend and verifying that they run without errors.
 
-## 6. API Reference (Quick)
+## Quick Demo
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/health` | Backend health + AI provider config status |
-| GET | `/api/safety/demo` | Run PRR analysis on built-in demo dataset |
-| POST | `/api/safety/analyze` | Upload CSV and run PRR signal detection |
-| POST | `/api/regulatory/check` | Check CTD submission readiness from JSON |
-| POST | `/api/copilot/chat` | AI Copilot — natural-language query |
+1. Start the frontend and backend using the commands above.
+2. Open the frontend in your browser.
+3. Use the Safety Intelligence and Regulatory Intelligence features to explore the application.
 
-Full OpenAPI docs are available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) when the backend is running.
+## Troubleshooting
 
----
 
-## 7. Troubleshooting
+| Issue                   | Solution                                                                                 |
+| ----------------------- | ---------------------------------------------------------------------------------------- |
+| `npm install` fails     | Check that Node.js is installed and try running the command again.                       |
+| Python dependency error | Check that Python is installed and run `pip install -r requirements.txt` again.          |
+| Backend does not start  | Make sure you are inside `src/backend` and run the Uvicorn command again.                |
+| Frontend does not start | Make sure you are inside `src/frontend` and run `npm install` followed by `npm run dev`. |
 
-| Symptom | Likely Cause | Fix |
-|---|---|---|
-| `uvicorn: command not found` | venv not active | Activate the venv first |
-| Frontend shows network errors | Backend not running | Start `uvicorn` in Terminal 1 |
-| AI Copilot returns placeholder text | No credentials in `.env` | Add `OPENROUTER_API_KEY` or watsonx keys |
-| `ibm-watsonx-ai` import error | SDK not installed | Run `pip install ibm-watsonx-ai` |
-| Vite port 5173 already in use | Another process | Kill the process or use `vite --port 5174` |
+
+| Frontend does not start | Make sure you are inside `src/frontend` and run `npm install` followed by `npm run dev`. |
