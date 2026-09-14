@@ -1,0 +1,81 @@
+---
+# IBM Bob AI Hackathon — Submission Metadata
+# Team: Tech Pirates
+# Problem Statement: P2 — Drug Safety Signal Detection & Regulatory Submission Readiness
+
+project_name: "PharmaGuard AI"
+team_name: "Tech Pirates"
+problem_statement: "P2"
+
+description: >
+  PharmaGuard AI is a full-stack web application that automates two critical
+  pharmaceutical workflows: drug safety signal detection (using Proportional
+  Reporting Ratio / PRR analysis on adverse-event CSV reports) and regulatory
+  submission readiness checking (CTD section completeness validation). An
+  AI Copilot powered by IBM watsonx.ai Granite (or OpenRouter as a primary
+  provider) answers natural-language questions grounded in the actual
+  analysis data loaded in the current session.
+
+# ── Source Code ─────────────────────────────────────────────────────────────
+source_code:
+  backend:
+    path: "src/backend"
+    language: Python
+    framework: FastAPI
+    entry_point: "src/backend/main.py"
+    start_command: "uvicorn main:app --reload --host 127.0.0.1 --port 8000"
+    dependencies: "src/backend/requirements.txt"
+
+  frontend:
+    path: "src/frontend"
+    language: JavaScript
+    framework: "React 18 + Vite 5"
+    start_command: "npm run dev"
+    dependencies: "src/frontend/package.json"
+
+# ── AI Integration ───────────────────────────────────────────────────────────
+ai_integration:
+  primary_provider: OpenRouter
+  primary_model: "meta-llama/llama-3.1-8b-instruct:free"
+  fallback_provider: "IBM watsonx.ai"
+  fallback_model: "ibm/granite-13b-chat-v2"
+  sdk_used: "ibm-watsonx-ai"
+  integration_file: "src/backend/services/watsonx_client.py"
+  grounding_strategy: >
+    The copilot prompt is built from real PRR signal data and CTD readiness
+    results produced in the current session. The model is instructed not to
+    invent pharmacovigilance findings or regulatory requirements.
+
+# ── Features ─────────────────────────────────────────────────────────────────
+features:
+  - name: "Safety Signal Detection"
+    description: "PRR-based adverse-event signal detection from user-uploaded CSV data"
+    endpoint: "POST /api/safety/analyze"
+  - name: "Safety Demo Mode"
+    description: "One-click analysis using the built-in synthetic dataset"
+    endpoint: "GET /api/safety/demo"
+  - name: "Regulatory Readiness Check"
+    description: "CTD section completeness validation against a structured requirements schema"
+    endpoint: "POST /api/regulatory/check"
+  - name: "AI Copilot"
+    description: "Natural-language Q&A grounded in session analysis data"
+    endpoint: "POST /api/copilot/chat"
+  - name: "Dashboard"
+    description: "Signal summary and readiness gauge consolidated in one view"
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+documentation:
+  problem_statement: "docs/problem-statement.md"
+  solution_overview: "docs/solution-overview.md"
+  architecture: "docs/architecture.md"
+  setup_guide: "docs/setup-guide.md"
+
+# ── Environment & Credentials ─────────────────────────────────────────────────
+credentials:
+  env_example: "src/backend/.env.example"
+  env_file: "src/backend/.env"
+  note: >
+    The .env file is excluded from version control by .gitignore.
+    The application works in demo/placeholder mode without any credentials.
+    Configure OPENROUTER_API_KEY or WATSONX_API_KEY + WATSONX_PROJECT_ID
+    to enable live AI responses.
