@@ -27,6 +27,9 @@ flowchart TD
 
     E --> P[Explanation and Prioritization]
 
+```
+
+## Main Components
 Main Components
 
 Component	                Responsibility
@@ -71,5 +74,6 @@ Sensitive pharmaceutical and patient information should be handled securely.
 API keys and other secrets should be stored using environment variables and should not be committed to the repository.
 
 ## Scalability Notes
+
 
 The safety and regulatory components are separated into independent modules so that they can be developed and scaled independently as the application grows.
