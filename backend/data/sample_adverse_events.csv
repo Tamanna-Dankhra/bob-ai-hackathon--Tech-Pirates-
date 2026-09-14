@@ -1,0 +1,39 @@
+# PharmaGuard AI - Synthetic Adverse Event Dataset
+# ==================================================
+# IMPORTANT: This is SYNTHETIC / DEMO DATA only.
+# It does NOT represent real patients, real drugs, or real adverse events.
+# It is designed to demonstrate PRR calculation and signal detection.
+# DO NOT use for any clinical, regulatory, or safety decision-making.
+# ==================================================
+drug_name,adverse_event,report_count
+DrugAlpha,Nausea,45
+DrugAlpha,Headache,12
+DrugAlpha,Fatigue,8
+DrugAlpha,Dizziness,5
+DrugAlpha,Rash,3
+DrugAlpha,Liver Enzyme Elevation,18
+DrugBeta,Nausea,10
+DrugBeta,Headache,30
+DrugBeta,Fatigue,22
+DrugBeta,Dizziness,4
+DrugBeta,Rash,2
+DrugBeta,Liver Enzyme Elevation,3
+DrugGamma,Nausea,8
+DrugGamma,Headache,9
+DrugGamma,Fatigue,6
+DrugGamma,Dizziness,25
+DrugGamma,Rash,14
+DrugGamma,Liver Enzyme Elevation,2
+DrugDelta,Nausea,5
+DrugDelta,Headache,4
+DrugDelta,Fatigue,3
+DrugDelta,Dizziness,2
+DrugDelta,Rash,1
+DrugDelta,Liver Enzyme Elevation,1
+DrugDelta,Cardiac Arrhythmia,22
+DrugEpsilon,Nausea,6
+DrugEpsilon,Headache,5
+DrugEpsilon,Fatigue,4
+DrugEpsilon,Dizziness,3
+DrugEpsilon,Rash,1
+DrugEpsilon,Cardiac Arrhythmia,2
