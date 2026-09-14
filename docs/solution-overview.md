@@ -1,66 +1,67 @@
-# Solution Overview — PharmaGuard AI
+# Solution Overview
 
-## What PharmaGuard AI Does
+## Our Solution
 
-PharmaGuard AI is a full-stack web application that helps pharmaceutical and regulatory professionals:
+PharmaGuard AI is an AI-powered pharmaceutical intelligence platform that combines drug safety signal detection with regulatory submission readiness checking.
 
-1. **Detect potential drug safety signals** from adverse-event report data using the Proportional Reporting Ratio (PRR) method.
-2. **Check regulatory submission readiness** of a CTD (Common Technical Document) against a structured requirements schema.
-3. **Query an AI Copilot** that explains findings and answers natural-language questions — grounded in the actual analysis results loaded in the current session.
+It provides two main capabilities:
 
----
+1. Safety Signal Detection
+2. Regulatory Submission Readiness
 
-## Key Modules
+An AI Copilot connects these results and helps users understand, prioritize, and act on the findings.
 
-### 1. Safety Intelligence
+## How It Works
 
-- Accepts a user-uploaded CSV (columns: `drug_name`, `adverse_event`, `report_count`) or a built-in synthetic demo dataset.
-- Calculates PRR for every drug × adverse-event combination.
-- Applies standard signal-detection thresholds:
-  - **PRR ≥ 2.0** and **≥ 3 reports** → qualifies as a potential signal.
-  - **PRR ≥ 5.0** → HIGH priority; **PRR 2–5** → MEDIUM; else LOW.
-- Returns a ranked list of signals with plain-English explanations.
-- Prominently disclaims that signals are *potential* only and do not establish causation.
+### 1. Safety Signal Detection
 
-### 2. Regulatory Intelligence
+Users provide adverse-event report data.
 
-- Accepts JSON describing which CTD sections are present and their completeness status.
-- Validates against a bundled `ctd_requirements.json` schema that defines required sections and their importance weights.
-- Returns an overall readiness percentage, counts of complete/incomplete/missing sections, and a prioritised gap list.
+PharmaGuard AI analyzes the reports, identifies drug-event patterns, and calculates Proportional Reporting Ratio (PRR) statistics to identify potential emerging safety signals.
+
+The system then presents the detected signals with their priority and supporting analysis.
+
+### 2. Regulatory Submission Readiness
+
+Users provide information about their regulatory submission dossier.
+
+PharmaGuard AI checks the dossier structure against ICH M4 CTD requirements, evaluates completeness for each module, and identifies missing or incomplete sections.
+
+The system generates a readiness score and a prioritized gap report.
 
 ### 3. AI Copilot
 
-- Receives the current safety and regulatory analysis results as grounding context.
-- Sends a structured prompt (system instruction + context + user question) to the configured AI provider.
-- Provider priority chain:
-  1. **OpenRouter** (preferred) — configurable model, e.g. `meta-llama/llama-3.1-8b-instruct:free`.
-  2. **IBM watsonx.ai** — Granite model via `ibm-watsonx-ai` SDK.
-  3. **Placeholder / Demo mode** — when no credentials are configured.
-- Answers are grounded in the loaded session data; the copilot is instructed not to invent findings.
+The AI Copilot works on top of the results produced by the platform.
 
-### 4. Dashboard
+Users can ask questions such as:
 
-- Consolidates safety signal summary and regulatory readiness into a single overview.
-- Displays signal count by priority and readiness percentage via Recharts visualisations.
-- Intended as the first screen a reviewer sees to decide where to focus.
+- Why was this safety signal flagged?
+- Which signal should I investigate first?
+- What are the most important submission gaps?
+- What should I fix first?
 
----
+The Copilot uses the application's analysis to provide explanations and prioritization rather than acting as a generic chatbot.
 
-## Technology Stack
+## What Makes It Different
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, Vite 5, Tailwind CSS 3, Recharts, Lucide React |
-| Backend | Python 3, FastAPI, uvicorn, pandas, pydantic |
-| AI — primary | OpenRouter API (`openai`-compatible SDK) |
-| AI — secondary | IBM watsonx.ai (`ibm-watsonx-ai` SDK, Granite model) |
-| Dev proxy | Vite proxy `/api` → `http://127.0.0.1:8000` |
+A basic solution could simply display safety statistics or list missing regulatory sections.
 
----
+PharmaGuard AI goes further by combining analysis, prioritization, and AI-assisted explanation in one workflow.
 
-## Design Principles
+Instead of only showing users what was detected, the platform helps them understand why it matters and what requires attention first.
 
-- **Grounded AI**: The copilot prompt is constructed from real analysis outputs, not free-form prompts. The model cannot hallucinate signal data it was not given.
-- **Credential safety**: All API keys are environment-variable-only; `.env` is excluded from version control; the health endpoint exposes no secret values.
-- **Graceful degradation**: Every module works in demo/placeholder mode without any API credentials.
-- **Pharmacovigilance accuracy**: Signal calculations implement the standard WHO Uppsala Monitoring Centre PRR formula; thresholds are industry-standard.
+## Key Design Decisions
+
+- Use PRR statistics for safety signal assessment as required by the problem statement.
+- Evaluate regulatory completeness module-by-module.
+- Present important findings with clear priorities.
+- Ground the AI Copilot in the application's analyzed results.
+- Keep safety analysis and regulatory checking as separate modules while connecting their results through a common dashboard.
+
+## User Experience
+
+The user begins from a central dashboard and can choose between Safety Intelligence and Regulatory Intelligence.
+
+After analysis, important findings are presented clearly through signals, readiness scores, and gap reports.
+
+The AI Copilot allows the user to ask questions about these findings and receive explanations and recommended priorities.
